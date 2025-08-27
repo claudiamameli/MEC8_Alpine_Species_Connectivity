@@ -11,8 +11,8 @@ library(rworldmap)
 library(gpkg)
 
 
-# 1. SPECIES DATA ---------------------------------------------------------
-# Specied Data Import & Cleanup ------------------------------------------------------------
+# 1. DATA IMPORT & CLEANUP---------------------------------------------------------
+## 1.1 Species Data  ------------------------------------------------------------
 df_species_tot <- read.csv("~/Desktop/GitHub/MEC8_Snowbed_Alpine_Species/Data/species_wide.csv")
 str(df_species_tot)
 
@@ -33,7 +33,7 @@ target_species <- df_species_bin %>%
 # # Uncomment if need to save the file again
 # write.csv(target_species, "~/Desktop/GitHub/MEC8_Snowbed_Alpine_Species/Data/target_species.csv")
 
-# Geo Data  Import & Cleanup ----------------------------------------------------------------
+## 1.2 Geo Data  ----------------------------------------------------------------
 st_layers("~/Desktop/GitHub/MEC8_Snowbed_Alpine_Species/Data/site_data.gpkg")
 geo_data_full <- read_sf("~/Desktop/GitHub/MEC8_Snowbed_Alpine_Species/Data/site_data.gpkg")
 
@@ -58,12 +58,7 @@ s_herbacea_data <- all_data %>%
 s_procumbens_data <- all_data %>%
   mutate(pres = Sibbaldia.procumbens) %>% 
   select("logger_ID", "pres", "geom")
-
-
-
-# 2. GEO DATA -------------------------------------------------------------
-# Import & Clean data  --------------------------------------------------------------
-
+## 1.3 Snowcover Data -------------------------------------------------------------
 snowbeds_tif <- list.files("~/Desktop/GitHub/MEC8_Snowbed_Alpine_Species/Data/snow_cover_maps" ,pattern = "tif$", full.names=T)
 
 snowbed_list <-  rast(snowbeds_tif)

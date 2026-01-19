@@ -1,3 +1,33 @@
+# Library -----------------------------------------------------------------
+library(tidyverse)
+library(ggplot2)
+library(sp)
+library(colorRamps)
+library(RColorBrewer)
+library(paletteer)
+library(terra)
+library(sf)
+library(rworldmap)
+library(gpkg)
+library(raster)
+library(igraph)
+library(ggplot2)
+library(ggridges)
+library(readxl)
+library(patchwork)
+library(networktools)
+library(cluster)
+library(cowplot)
+library(caseconverter) 
+
+# Import data frames ------------------------------------------------------
+path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/prelim_dfs"
+files <- list.files(path, pattern = "\\.csv$", full.names = TRUE)
+
+list2env(setNames(lapply(files, read.csv),
+    tools::file_path_sans_ext(basename(files))), envir = .GlobalEnv)
+
+
 # D. BINARY MAPS TRIALS - g_supinum --------------------------------------------------------
 
 trials <- snowbed_pres_1_7_sum

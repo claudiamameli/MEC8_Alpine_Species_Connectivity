@@ -187,7 +187,7 @@ plot(temp_fut585_mean_crop)
 
 
 ## 2.3 Carbon --------------------------------------------------------------
-carbon <- rast("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/carbon.tif")
+carbon <- rast("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/carbon/carbon.tif")
 plot(carbon)
 
 
@@ -335,3 +335,19 @@ summary_g_supinum
 summary_l_alpino_pilosa
 summary_s_herbacea
 summary_s_procumbens
+
+
+
+df_list <- list(full_data_df = full_data_df,
+                summary_g_supinum = summary_g_supinum, 
+                summary_l_alpino_pilosa = summary_l_alpino_pilosa, 
+                summary_s_herbacea = summary_s_herbacea, 
+                summary_s_procumbens = summary_s_procumbens)
+
+path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/prelim_dfs/"
+
+
+for(i in names(df_list)){
+  write.csv(df_list[[i]], paste0(path, i,".csv"))
+}
+

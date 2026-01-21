@@ -193,37 +193,22 @@ plot(carbon)
 
 # 3. Map Values Extractions ---------------------------------------
 ## 3.1 Snowcover ---------------------------------------------------------------
-snow_pres_1_7_extract <- terra::extract(snowbed_pres_1_7_sum, geo_data_full, ID = FALSE)
+snow_pres_1_7_extract <- terra::extract(snowbed_pres_1_7_mean, geo_data_full, ID = FALSE)
 names(snow_pres_1_7_extract) <- "snow_pres_1_7"
-snow_fut_1_7_extract <- terra::extract(snowbed_fut_1_7_sum, geo_data_full, ID = FALSE)
-names(snow_fut_1_7_extract) <- "snow_fut_1_7"
-
 
 ## 3.2 Temperature  ------------------------------------------------------------
 temp_pres_extract <- terra::extract(temp_pres_mean_crop, geo_data_full, ID = FALSE)
 names(temp_pres_extract) <- "temp_pres"
-temp_fut245_extract <- terra::extract(temp_fut245_mean_crop, geo_data_full, ID = FALSE)
-names(temp_fut245_extract) <- "temp_fut245"
-temp_fut585_extract <- terra::extract(temp_fut585_mean_crop, geo_data_full, ID = FALSE)
-names(temp_fut585_extract) <- "temp_fut585"
 
 ## 3.3 Carbon ------------------------------------------------------------------
 carbon_extract <- terra::extract(carbon, geo_data_full, ID = FALSE)
 names(carbon_extract) <- "carbon"
 
-
-
-
-
-
 # 4. Dataframe constructions ----------------------------------------------------
 ## 4.1 Final table for all species and all climate data -------------------------------------------------------------
 full_data_df <- data.frame(target_species_data, 
                              snow_pres_1_7_extract, 
-                             snow_fut_1_7_extract,
                              temp_pres_extract,
-                             temp_fut245_extract, 
-                             temp_fut585_extract,
                              carbon_extract)
 str(full_data_df)
 
@@ -236,8 +221,6 @@ summary_g_supinum <- full_data_df %>%
     cols = c(
       snow_pres_1_7,
       temp_pres,
-      temp_fut245,
-      temp_fut585,
       carbon
     ),
     names_to = "metric",
@@ -261,8 +244,6 @@ summary_l_alpino_pilosa <- full_data_df %>%
     cols = c(
       snow_pres_1_7,
       temp_pres,
-      temp_fut245,
-      temp_fut585,
       carbon
     ),
     names_to = "metric",
@@ -286,8 +267,6 @@ summary_s_herbacea <- full_data_df %>%
     cols = c(
       snow_pres_1_7,
       temp_pres,
-      temp_fut245,
-      temp_fut585,
       carbon
     ),
     names_to = "metric",
@@ -311,8 +290,6 @@ summary_s_procumbens <- full_data_df %>%
     cols = c(
       snow_pres_1_7,
       temp_pres,
-      temp_fut245,
-      temp_fut585,
       carbon
     ),
     names_to = "metric",
@@ -351,3 +328,23 @@ for(i in names(df_list)){
   write.csv(df_list[[i]], paste0(path, i,".csv"))
 }
 
+
+
+# 6. FINAL MEAN MAPS ------------------------------------------------------
+plot(snowbed_pres_1_7_mean)
+plot(snowbed_fut_1_7_mean)
+plot(temp_pres_mean_crop)
+plot(temp_fut245_mean_crop)
+plot(temp_fut585_mean_crop)
+
+tifs_list <- list(snowbed_pres_1_7_mean = snowbed_pres_1_7_mean,
+                  snowbed_fut_1_7_mean = snowbed_fut_1_7_mean,
+                  temp_pres_mean_crop = temp_pres_mean_crop,
+                  temp_fut245_mean_crop = temp_fut245_mean_crop,
+                  temp_fut585_mean_crop = temp_fut585_mean_crop)
+
+path_tifs <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/gis_map_overlay/"
+
+for(i in names(tifs_list)){
+  writeRaster(tifs_list[[i]], paste0(path_tifs, i,".tif"))
+}

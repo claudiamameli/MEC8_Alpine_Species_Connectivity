@@ -28,12 +28,12 @@ list2env(setNames(lapply(files, read.csv),
     tools::file_path_sans_ext(basename(files))), envir = .GlobalEnv)
 
 
-# D. BINARY MAPS TRIALS - g_supinum --------------------------------------------------------
+# D. BINARY MAPS TRIALS - g_supinum - snow --------------------------------------------------------
 
-trials <- snowbed_pres_1_7_sum
-trials_fut <- snowbed_fut_1_7_sum
+trials <- snowbed_pres_1_7_mean
+trials_fut <- snowbed_fut_1_7_mean
 
-g_supinum_mean <- (summary_snowcover_1_7$mean[summary_snowcover_1_7$species == "g_supinum"])
+g_supinum_mean <- (summary_g_supinum$mean[summary_g_supinum$metric== "snow_pres_1_7"])
 
 tol <- 0.5
 

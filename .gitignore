@@ -10,3 +10,4 @@ old_scripts/*
 old_scripts
 .RDataTmp1
 gis_map_overlay/*
+*.docx

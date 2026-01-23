@@ -19,6 +19,8 @@ library(networktools)
 library(cluster)
 library(cowplot)
 library(caseconverter) 
+library(ggpubr)
+
 
 # 1.  Import data frames and maps ------------------------------------------------------
 path_df <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/prelim_dfs"
@@ -166,3 +168,78 @@ graphs_path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/species_speci
 for(i in names(df_graphs_list)){
   write.csv(df_graphs_list[[i]], paste0(graphs_path, i,".csv"))
 }
+
+
+# Visual comparison of different scenarios --------------------------------
+summary_table_scenarios <- read.csv("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/species_specific_df/summary_table_scenarios.csv")
+
+summary_table_scenarios
+
+
+# Change order to change appearance in the Legends.
+summary_table_scenarios$scenario <- factor(summary_table_scenarios$scenario, levels = c('Present', 'Future 245', 'Future 585'))
+
+
+total_patches_plot <- ggplot(data = summary_table_scenarios, 
+       aes(x = buffer, y = tot_patches, 
+           group = scenario, 
+           colour = scenario 
+       )) +
+  geom_line() +
+  scale_fill_brewer(palette="Dark2") +
+  theme_bw() + 
+  scale_color_manual(values=c("#00AA00", "#FFA500", "#FF4000")) +
+  labs(x = "Buffer (m)", y = "Total Number",
+         title = "a) Number of patches") +
+  theme(
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 14)
+  ) +
+  guides(colour=guide_legend(title="Climate Scenarios"))
+
+
+smallest_area_plot <- ggplot(data = summary_table_scenarios, 
+       aes(x = buffer, y = log(min_area_m2), 
+           group = scenario, 
+           colour = scenario 
+       )) +
+  geom_line() +
+  theme_bw()+
+  scale_color_manual(values=c("#00AA00", "#FFA500", "#FF4000")) +
+  labs(x = "Buffer (m)", y = "Area log(m2)",
+       title ="b) Smallest patch") +
+  theme(
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 14)
+  ) +
+  guides(colour=guide_legend(title="Climate Scenarios"))
+
+
+largest_area_plot <- ggplot(data = summary_table_scenarios, 
+       aes(x = buffer, y = log(max_area_m2), 
+           group = scenario, 
+           colour = scenario 
+       )) +
+  geom_line() +
+  theme_bw()+
+  scale_color_manual(values=c("#00AA00", "#FFA500", "#FF4000")) +
+  labs(x = "Buffer (m)", y = "Area log(m2)",
+       title ="c) Largest patch") +
+  theme(
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 14)
+  ) +
+  guides(colour = guide_legend(title="Climate Scenarios"))
+
+# Comaparison plot with main features of the created graphs
+ggarrange(total_patches_plot, smallest_area_plot, largest_area_plot, 
+          align = "v", ncol = 1, 
+          common.legend = T,
+          legend = "right"
+          )

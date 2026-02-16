@@ -1,6 +1,5 @@
 # Library -----------------------------------------------------------------
 library(tidyverse)
-library(ggplot2)
 library(sp)
 library(colorRamps)
 library(RColorBrewer)
@@ -19,8 +18,8 @@ library(networktools)
 library(cluster)
 library(cowplot)
 library(caseconverter) 
-
-
+library(mgcv)
+library(gam)
 
 # 1. Species Data  ------------------------------------------------------------
 ## 1.1 Presence/absence ----------------------------------------------------
@@ -35,7 +34,7 @@ colnames(df_species_tot)[grepl("Sibbaldia", colnames(df_species_tot))]
 
 # Change from abundance into pres/abs data
 df_species_bin <- df_species_tot
-df_species_bin[ , -1] <- as.factor(ifelse(df_species_bin[ , -1] > 0, 1, 0))
+df_species_bin[ , -1] <- as.numeric(ifelse(df_species_bin[ , -1] > 0, 1, 0))
 
 # Select target species
 target_species <- df_species_bin %>% 
@@ -68,10 +67,10 @@ df_species_kernels$species[grep("salix", df_species_kernels$species)]
 df_species_kernels$species[grep("sibbaldia", df_species_kernels$species)]
 
 # Select target species
-target_species_k <- c("gnaphalium_supinum", "luzula_alpino-pilosa", "salix_herbacea", "sibbaldia_procumbens")
+target_species_names <- c("gnaphalium_supinum", "luzula_alpino-pilosa", "salix_herbacea", "sibbaldia_procumbens")
 
 kernels_target_sp <- df_species_kernels %>%
-  filter(species %in% target_species_k)
+  filter(species %in% target_species_names)
 
 kernels_target_sp
 
@@ -348,3 +347,19 @@ path_tifs <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/gis_map_overlay
 for(i in names(tifs_list)){
   writeRaster(tifs_list[[i]], paste0(path_tifs, i,".tif"))
 }
+
+
+
+# Regression line  --------------------------------------------------------
+full_data_df_clean <- na.omit(full_data_df)
+
+gnap_glm <- glm(data = full_data_df_clean, Gnaphalium.supinum ~ snow_pres_1_7 + temp_pres + carbon, family = binomial)
+sum_gnap_glm <- summary(gnap_glm)
+d_sq_glm <- ((sum_gnap_glm$null.deviance - sum_gnap_glm$deviance)/sum_gnap_glm$null.deviance)
+
+# also tried gams and poly but they all almost give the same results - the regression does nto show significance with these parameters, so does it make sense using them? I am a little confused personally. 
+
+z_values <- c(snow = 0.912, temp = 0.080, carbon = 0.631)
+percentages <- round((abs(z_values) / sum(abs(z_values))) * 100, 1)
+print(percentages)
+

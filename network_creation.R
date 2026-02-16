@@ -22,85 +22,28 @@ library(caseconverter)
 
 
 
-# TO DEAL WITH ------------------------------------------------------------
+# final dataframes ------------------------------------------------------------
+g_supinum_pres_buff3 <- g_supinum_pres_buff3[,4:7]
+g_supinum_fut245_buff3 <- g_supinum_fut245_buff3[,4:7]
+g_supinum_fut585_buff3 <- g_supinum_fut585_buff3[,4:7]
+
+plot_nodes(g_supinum_pres_buff3, "Present", "3")
+plot_nodes(g_supinum_fut245_buff3, "Future 2-4.5", "3")
+plot_nodes(g_supinum_fut585_buff3, "Future 5-8.5", "3")
+
+kernels_target_sp
 
 
 
-quartz()
-
-ggplot(data=g_supinum_pres_buff3, 
-       aes(x=longitude, y=latitude, 
-           #size=area_m2
-       )) +
-  geom_point() +
-  #geom_text(aes(label=patch_ID), hjust=-0.1, vjust=-0.1, col="darkgrey", size=4) +
-  coord_fixed() +
-  #labs(size="Patch area\n(m2)") +
-  theme_bw() +
-  theme(axis.title=element_blank(), axis.text=element_blank(),
-        axis.ticks=element_blank(),
-        panel.background=element_rect(fill="white", colour="grey"),
-        panel.grid.major=element_line(colour="grey"),
-        legend.position="bottom")
-
-
-quartz()
-ggplot(data=merged_patch_info, 
-       aes(x=longitude, y=latitude, 
-           #size=area_m2
-       )) +
-  geom_point() +
-  #geom_text(aes(label=patch_ID), hjust=-0.1, vjust=-0.1, col="darkgrey", size=4) +
-  coord_fixed() +
-  labs(size="Patch area\n(m2)") +
-  theme_bw() +
-  theme(axis.title=element_blank(), axis.text=element_blank(),
-        axis.ticks=element_blank(),
-        panel.background=element_rect(fill="white", colour="grey"),
-        panel.grid.major=element_line(colour="grey"),
-        legend.position="bottom")
-
-
-
-
-
-
-
-ggplot(data=fut_patch_info, 
-       aes(x=longitude, y=latitude, 
-           #size=area_m2
-       )) +
-  geom_point() +
-  #geom_text(aes(label=patch_ID), hjust=-0.1, vjust=-0.1, col="darkgrey", size=4) +
-  coord_fixed() +
-  labs(size="Patch area\n(m2)") +
-  theme_bw() +
-  theme(axis.title=element_blank(), axis.text=element_blank(),
-        axis.ticks=element_blank(),
-        panel.background=element_rect(fill="white", colour="grey"),
-        panel.grid.major=element_line(colour="grey"),
-        legend.position="bottom")
-
-
-ggplot(data=fut_merged_patch_info, 
-       aes(x=longitude, y=latitude, 
-           #size=area_m2
-       )) +
-  geom_point() +
-  #geom_text(aes(label=patch_ID), hjust=-0.1, vjust=-0.1, col="darkgrey", size=4) +
-  coord_fixed() +
-  labs(size="Patch area\n(m2)") +
-  theme_bw() +
-  theme(axis.title=element_blank(), axis.text=element_blank(),
-        axis.ticks=element_blank(),
-        panel.background=element_rect(fill="white", colour="grey"),
-        panel.grid.major=element_line(colour="grey"),
-        legend.position="bottom")
+# distribution of area values  -------------------------------------------------
+ggplot(g_supinum_pres_buff3, aes(x = area_m2))+
+  geom_histogram(binwidth = 500000)
 
 
 # edge to edge function  --------------------------------------------------
-df_patch <- merged_patch_info
-d <- 2 
+df_patch <- g_supinum_pres_buff3
+# q0.9995
+d <- 0.1
 
 euclidean_network_e2e <- function(d, df_patch) {
   # matrix of distances between all pairs of patches
@@ -209,21 +152,23 @@ euclidean_network_e2e <- function(d, df_patch) {
   ))
 }
 
-object.size(merged_patch_info) %>% format(units = "Mb")
 
 
-trial_net <- euclidean_network_e2e(2, merged_patch_info)  
-fut_trial_net <- euclidean_network_e2e(2, fut_merged_patch_info)  
+trial_net <- euclidean_network_e2e(d, g_supinum_pres_buff3)  
+trial_net_fut <- euclidean_network_e2e(d, g_supinum_fut245_buff3)  
+
 
 
 trial_net$percent_connected
-fut_trial_net$percent_connected
+trial_net_fut$percent_connected
 
 # plot igraph object
 # define node coordinates (igraph layout)
 
 g <- trial_net$graph
 nodes <- igraph::as_data_frame(g, what = "vertices")
+
+plot(g)
 
 layout_coords <- nodes %>%
   dplyr::select(name, longitude, latitude) %>%
@@ -234,7 +179,7 @@ layout_coords <- nodes %>%
 
 plot(g,
      layout = layout_coords,
-     vertex.size = 0.3,
+     vertex.size = 1,
      #vertex.label = V(g)$name,
      vertex.label = "",
      vertex.color = "black",
@@ -243,7 +188,7 @@ plot(g,
      main = paste0("Pres Spatial Network, d = ",d) )
 
 
-g2 <- fut_trial_net$graph
+g2 <- trial_net_fut$graph
 nodes <- igraph::as_data_frame(g2, what = "vertices")
 
 layout_coords <- nodes %>%
@@ -255,7 +200,7 @@ layout_coords <- nodes %>%
 
 plot(g2,
      layout = layout_coords,
-     vertex.size = 0.3,
+     vertex.size = 1,
      #vertex.label = V(g2)$name,
      vertex.label = "",
      vertex.color = "black",
@@ -274,15 +219,17 @@ pres_dist_metrics <-  data.frame(
   comp_fraction = trial_net$fraction_comp
 )
 fut_dist_metrics <-  data.frame(
-  distance = fut_trial_net$distance,
-  percent_connected = fut_trial_net$percent_connected,
-  connectance = fut_trial_net$connectance,
-  modularity = fut_trial_net$modularity,
-  comp_number = fut_trial_net$comp_number, 
-  comp_largest = fut_trial_net$largest_comp,
-  comp_fraction = fut_trial_net$fraction_comp
+  distance = trial_net_fut$distance,
+  percent_connected = trial_net_fut$percent_connected,
+  connectance = trial_net_fut$connectance,
+  modularity = trial_net_fut$modularity,
+  comp_number = trial_net_fut$comp_number, 
+  comp_largest = trial_net_fut$largest_comp,
+  comp_fraction = trial_net_fut$fraction_comp
 )
 
 pres_dist_metrics
 fut_dist_metrics
 
+sort(trial_net$degree)
+sort(trial_net_fut$degree)

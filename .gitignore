@@ -8,7 +8,7 @@ Data/*
 Data/.DS_Store
 old_scripts/*
 old_scripts
-.RDataTmp1
+.RDataTmp*
 gis_map_overlay/*
 *.docx
 species_specific_df/*.xlsx

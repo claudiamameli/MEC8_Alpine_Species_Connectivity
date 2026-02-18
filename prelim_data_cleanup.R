@@ -195,9 +195,15 @@ plot(carbon)
 snow_pres_1_7_extract <- terra::extract(snowbed_pres_1_7_mean, geo_data_full, ID = FALSE)
 names(snow_pres_1_7_extract) <- "snow_pres_1_7"
 
+snow_pres_1_7_2021_extract <- terra::extract(snowbed_pres_1_7$snowcover1_7_2021, geo_data_full, ID = FALSE)
+names(snow_pres_1_7_2021_extract) <- "snow_pres_1_7_2021"
+
 ## 3.2 Temperature  ------------------------------------------------------------
 temp_pres_extract <- terra::extract(temp_pres_mean_crop, geo_data_full, ID = FALSE)
 names(temp_pres_extract) <- "temp_pres"
+
+temp_pres_2021_extract <- terra::extract(temp_pres$MSummer_2021, geo_data_full, ID = FALSE)
+names(temp_pres_2021_extract) <- "temp_pres_2021"
 
 ## 3.3 Carbon ------------------------------------------------------------------
 carbon_extract <- terra::extract(carbon, geo_data_full, ID = FALSE)
@@ -206,9 +212,11 @@ names(carbon_extract) <- "carbon"
 # 4. Dataframe constructions ----------------------------------------------------
 ## 4.1 Final table for all species and all climate data -------------------------------------------------------------
 full_data_df <- data.frame(target_species_data, 
-                             snow_pres_1_7_extract, 
-                             temp_pres_extract,
-                             carbon_extract)
+                           snow_pres_1_7_extract,
+                           snow_pres_1_7_2021_extract,
+                           temp_pres_extract,
+                           temp_pres_2021_extract,
+                           carbon_extract)
 str(full_data_df)
 
 
@@ -344,22 +352,42 @@ tifs_list <- list(snowbed_pres_1_7_mean = snowbed_pres_1_7_mean,
 
 path_tifs <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/gis_map_overlay/"
 
-for(i in names(tifs_list)){
-  writeRaster(tifs_list[[i]], paste0(path_tifs, i,".tif"))
-}
+#for(i in names(tifs_list)){
+#  writeRaster(tifs_list[[i]], paste0(path_tifs, i,".tif"))
+#}
 
 
 
 # Regression line  --------------------------------------------------------
 full_data_df_clean <- na.omit(full_data_df)
 
-gnap_glm <- glm(data = full_data_df_clean, Gnaphalium.supinum ~ snow_pres_1_7 + temp_pres + carbon, family = binomial)
+gnap_glm <- glm(data = full_data_df_clean, 
+                Gnaphalium.supinum ~ snow_pres_1_7 + temp_pres + carbon, 
+                family = binomial)
+summary(gnap_glm)
+
 sum_gnap_glm <- summary(gnap_glm)
 d_sq_glm <- ((sum_gnap_glm$null.deviance - sum_gnap_glm$deviance)/sum_gnap_glm$null.deviance)
 
-# also tried gams and poly but they all almost give the same results - the regression does nto show significance with these parameters, so does it make sense using them? I am a little confused personally. 
+# also tried gams and poly but they all almost give the same results - the regression does not show significance with these parameters, so does it make sense using them? I am a little confused personally. 
 
 z_values <- c(snow = 0.912, temp = 0.080, carbon = 0.631)
 percentages <- round((abs(z_values) / sum(abs(z_values))) * 100, 1)
 print(percentages)
 
+
+
+gnap_glm_poly <- glm(data = full_data_df_clean, 
+                Gnaphalium.supinum ~ poly(snow_pres_1_7,2) + poly(temp_pres,2) + carbon, 
+                family = binomial)
+summary(gnap_glm_poly)
+
+gnap_gam_s <- gam(data = full_data_df_clean, 
+                Gnaphalium.supinum ~ s(snow_pres_1_7) + s(temp_pres) + carbon, 
+                family = binomial)
+summary(gnap_gam_s)
+
+gnap_gam_s4 <- gam(data = full_data_df_clean, 
+                Gnaphalium.supinum ~ s(snow_pres_1_7,4) + s(temp_pres,4) + carbon, 
+                family = binomial)
+summary(gnap_gam_s4)

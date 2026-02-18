@@ -23,10 +23,6 @@ library(caseconverter)
 
 
 # final dataframes ------------------------------------------------------------
-g_supinum_pres_buff3 <- g_supinum_pres_buff3[,4:7]
-g_supinum_fut245_buff3 <- g_supinum_fut245_buff3[,4:7]
-g_supinum_fut585_buff3 <- g_supinum_fut585_buff3[,4:7]
-
 plot_nodes(g_supinum_pres_buff3, "Present", "3")
 plot_nodes(g_supinum_fut245_buff3, "Future 2-4.5", "3")
 plot_nodes(g_supinum_fut585_buff3, "Future 5-8.5", "3")
@@ -35,21 +31,30 @@ kernels_target_sp
 
 
 
-# distribution of area values  -------------------------------------------------
-ggplot(g_supinum_pres_buff3, aes(x = area_m2))+
-  geom_histogram(binwidth = 500000)
+# Distribution of area values  -------------------------------------------------
+ggplot(subset(g_supinum_all, buffer == "3"),
+       aes(x = scenario, y = log(area_m2))) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(
+    x = "Scenario",
+    y = "Patch area - log(m²)",
+    title = "Patch area distribution - buffer 3m"
+  )
+
 
 
 # edge to edge function  --------------------------------------------------
 df_patch <- g_supinum_pres_buff3
 # q0.9995
-d <- 0.1
+d <- 50
 
 euclidean_network_e2e <- function(d, df_patch) {
   # matrix of distances between all pairs of patches
   mat_dist <- as.matrix(dist(dplyr::select(df_patch, longitude,latitude), method="euclidean", diag=TRUE, upper=TRUE))
+  print('preliminary matrix created')
   
-  # Calculate and extrapolates the radius of individual patches
+  # calculate and extrapolate the radius of individual patches
   df_patch$radius <- sqrt(df_patch$area_m2 / pi)
   radius_list <- dplyr::select(df_patch, radius)
   
@@ -57,7 +62,6 @@ euclidean_network_e2e <- function(d, df_patch) {
   # creation  of a new distance matrix considering edge to edge distance
   e2e_mat_dist <- mat_dist
   e2e_mat_dist[] <- 0 
-  print('preliminary matrix created')
   
   #this takes a long time <<<<<<<<<<<<<<<<<<< Changed into the version below
   # for (i in 1:nrow(mat_dist)) {
@@ -69,8 +73,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   # this avoids loops, which was taking too long. 
   radius_matrix <- outer(radius_list$radius, radius_list$radius, `+`)
   e2e_mat_dist <- mat_dist - radius_matrix
-  print('edge to edge created')
-  
+  print('edge to edge matrix created')
   
   # This is to make sure diagonal and negative values are set to 0 
   diag(e2e_mat_dist) <- 0 
@@ -154,16 +157,14 @@ euclidean_network_e2e <- function(d, df_patch) {
 
 
 
-trial_net <- euclidean_network_e2e(d, g_supinum_pres_buff3)  
-trial_net_fut <- euclidean_network_e2e(d, g_supinum_fut245_buff3)  
+trial_net <- euclidean_network_e2e(50, g_supinum_pres_buff3)  
+trial_net_fut <- euclidean_network_e2e(50, g_supinum_fut245_buff3)  
 
 
 
 trial_net$percent_connected
 trial_net_fut$percent_connected
 
-# plot igraph object
-# define node coordinates (igraph layout)
 
 g <- trial_net$graph
 nodes <- igraph::as_data_frame(g, what = "vertices")
@@ -179,7 +180,7 @@ layout_coords <- nodes %>%
 
 plot(g,
      layout = layout_coords,
-     vertex.size = 1,
+     vertex.size = log10(nodes$area_m2),
      #vertex.label = V(g)$name,
      vertex.label = "",
      vertex.color = "black",
@@ -200,7 +201,7 @@ layout_coords <- nodes %>%
 
 plot(g2,
      layout = layout_coords,
-     vertex.size = 1,
+     vertex.size = log10(nodes$area_m2),
      #vertex.label = V(g2)$name,
      vertex.label = "",
      vertex.color = "black",
@@ -231,5 +232,4 @@ fut_dist_metrics <-  data.frame(
 pres_dist_metrics
 fut_dist_metrics
 
-sort(trial_net$degree)
-sort(trial_net_fut$degree)
+summary_table_scenarios

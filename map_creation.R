@@ -21,7 +21,7 @@ library(caseconverter)
 library(ggpubr)
 
 
-# 1.  Import data frames and maps ------------------------------------------------------
+# 1. Import data frames and maps ------------------------------------------------------
 path_df <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/prelim_dfs"
 files_df <- list.files(path_df, pattern = "\\.csv$", full.names = TRUE)
 

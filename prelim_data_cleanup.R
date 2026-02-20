@@ -1,25 +1,6 @@
 # Library -----------------------------------------------------------------
-library(tidyverse)
-library(sp)
-library(colorRamps)
-library(RColorBrewer)
-library(paletteer)
-library(terra)
-library(sf)
-library(rworldmap)
-library(gpkg)
-library(raster)
-library(igraph)
-library(ggplot2)
-library(ggridges)
-library(readxl)
-library(patchwork)
-library(networktools)
-library(cluster)
-library(cowplot)
-library(caseconverter) 
-library(mgcv)
-library(gam)
+# Importing functions and full library
+source("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/functions_library.R")
 
 # 1. Species Data  ------------------------------------------------------------
 ## 1.1 Presence/absence ----------------------------------------------------
@@ -46,10 +27,7 @@ target_species <- df_species_bin %>%
 # write.csv(target_species, "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/target_species.csv")
 
 ## 1.2 Geo Data - Schrankogel ----------------------------------------------------------------
-st_layers("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/site_data.gpkg")
 geo_data_full <- read_sf("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/site_data.gpkg")
-
-#plot(geo_data_full$geom, asp = 0)
 
 target_species_data <- target_species %>% 
   left_join(dplyr::select(geo_data_full, logger_ID, geom), by = "logger_ID")

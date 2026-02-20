@@ -1,24 +1,6 @@
 # Library -----------------------------------------------------------------
-library(tidyverse)
-library(ggplot2)
-library(sp)
-library(colorRamps)
-library(RColorBrewer)
-library(paletteer)
-library(terra)
-library(sf)
-library(rworldmap)
-library(gpkg)
-library(raster)
-library(igraph)
-library(ggridges)
-library(readxl)
-library(patchwork)
-library(networktools)
-library(cluster)
-library(cowplot)
-library(caseconverter)
-library(ggpubr)
+# Importing functions and full library
+source("~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/functions_library.R")
 
 
 # 1. Import data frames and maps ------------------------------------------------------

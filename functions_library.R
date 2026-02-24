@@ -94,8 +94,15 @@ euclidean_network_e2e <- function(d, df_patch) {
   n = nrow(m_adj) # number of patches
   c = sum(m_adj) / (n*(n-1))
   
+  # Calculate PC (Probability of connectivity - area-weighted) 
+  total_area <- sum(df_patch$area_m2)
+  groups <- components(g)$membership # finds which patches are in the same component
+  group_areas <- tapply(df_patch$area_m2, groups, sum)
+  PC <- sum(group_areas^2) / (total_area^2)
+
+  
   # Modularity
-  modules <- cluster_infomap(g) # switch to different function if needed
+  modules <- cluster_louvain(g) # switch to different function if needed
   m <- modularity(modules)
   
   # Centrality metrics
@@ -129,7 +136,8 @@ euclidean_network_e2e <- function(d, df_patch) {
     largest_comp = largest_size,
     fraction_comp = fraction,
     percent_connected = percent_connected,
-    graph = g
+    graph = g,
+    prob_conn = PC
   ))
 }
 
@@ -166,6 +174,7 @@ net_metrics_fun <-  function(full_results, scenario_){
   comp_number = full_results$comp_number, 
   comp_largest = full_results$largest_comp,
   comp_fraction = full_results$fraction_comp,
+  prob_connectivity = full_results$prob_conn,
   scenario = scenario_)
 }
 
@@ -201,7 +210,7 @@ random_mod_cal_fun <- function(g, num_graphs) {
   random_modularity <- numeric(num_graphs)
   for (i in 1:num_graphs) {
     g_rand <- sample_degseq(degree(g), method = "configuration")
-    mod_rand <- cluster_infomap(g_rand) #can be changed to other clustering functions - for comparison better to match with same as in euclidean_network_e2e function
+    mod_rand <- cluster_louvain(g_rand) #can be changed to other clustering functions - for comparison better to match with same as in euclidean_network_e2e function
     random_modularity[i] <- modularity(mod_rand)
   }
   return(random_modularity)

@@ -49,27 +49,27 @@ ggplot(subset(g_supinum_buff3, buffer == "3"),
 
 ## 2.1 G. supinum networks ------------------------------------------------------
 gnap_pres_net <- euclidean_network_e2e(50, g_supinum_pres_buff3)      # present
-gnap_fut245_net <- euclidean_network_e2e(50, g_supinum_fut245_buff3)  # future 2-4.5
+# gnap_fut245_net <- euclidean_network_e2e(50, g_supinum_fut245_buff3)  # future 2-4.5 # Until I have the right maps there is no point doing this as snow data and temperature are from 2 different projections
 gnap_fut585_net <- euclidean_network_e2e(50, g_supinum_fut585_buff3)  # future 5-5.8
 
 
 
 ### a. Network Visualisation  --------------------------------------------
 graph_plot_fun(gnap_pres_net$graph, 50, "Present")
-graph_plot_fun(gnap_fut245_net$graph, 50, "Future 2-4.5")
+# graph_plot_fun(gnap_fut245_net$graph, 50, "Future 2-4.5")
 graph_plot_fun(gnap_fut585_net$graph, 50, "Future 5-5.8")
 
 
 ### b. Network Metrics ---------------------------------------------------------
 gnap_net_metrics <- data.frame(
   rbind(net_metrics_fun(gnap_pres_net, "Present"),
-  net_metrics_fun(gnap_fut245_net, "Future 2-4.5"),
+  # net_metrics_fun(gnap_fut245_net, "Future 2-4.5"),
   net_metrics_fun(gnap_fut585_net, "Future 5-8.5"))
 )
 
 ### c. Node Metrics ---------------------------------------------------------
 gnap_pres_node_metrics <- node_metrics_fun(gnap_pres_net, g_supinum_pres_buff3) 
-gnap_fut245_node_metrics <- node_metrics_fun(gnap_fut245_net, g_supinum_fut245_buff3) 
+# gnap_fut245_node_metrics <- node_metrics_fun(gnap_fut245_net, g_supinum_fut245_buff3) 
 gnap_fut585_node_metrics <- node_metrics_fun(gnap_fut585_net, g_supinum_fut585_buff3) 
 
 

@@ -11,66 +11,21 @@ list2env(setNames(lapply(files_df, read.csv),
     tools::file_path_sans_ext(basename(files_df))),
     envir = .GlobalEnv,)
 
-path_maps <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/final_overlay_maps"
+path_maps <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/prelim_overlay_maps"
 files_rast <- list.files(path_maps ,pattern = "tif$", full.names=T)
 
 list2env(setNames(lapply(files_rast, rast),
                   tools::file_path_sans_ext(basename(files_rast))), envir = .GlobalEnv)
 
+plot(gnap_pres_bin_k)
 plot(g_supinum_pres_bin)
 plot(g_supinum_fut245_bin)
 plot(g_supinum_fut585_bin)
 
 
+
 # 2. Graph creation ----------------------------------------------------------
-## 2.1 Nodes creation function  ----------------------------------------------------------------
-
-node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
-
-  # Connect neighbouring cells (direction = 8 for corners, = 4 for sides only)
-  cat("Creating patches \n")
-  patch_data <- patches(original_map, directions = direction, zeroAsNA=T)
-
-  # Calculate cell counts and area
-  cat("Counting cells \n")
-  patch_cell_count <- freq(patch_data, bylayer = FALSE)
-  area_m2 <- patch_cell_count$count * cell_res
-
-  # Create polygons and find centroids
-  cat("Creating polygons and centroids \n")
-  patch_polygons <- as.polygons(patch_data, dissolve = TRUE)
-  df_centroids <- crds(centroids(patch_polygons), df = TRUE)
-
-  # Buffer addition
-  if(is.null(buffer_val) == F){
-    cat("Adding buffer \n")
-    patch_polys_buffered <- buffer(patch_polygons, width = buffer_val)
-
-    r_buffered <- rasterize(patch_polys_buffered, g_supinum_pres_bin, field = 1)
-
-    buffer_patches <- patches(r_buffered, directions = direction)
-    patch_polygons <- as.polygons(buffer_patches, dissolve = TRUE)
-
-    area_m2 <- expanse(patch_polygons, unit = "m")
-    df_centroids <- crds(centroids(patch_polygons), df = TRUE)
-  }
-
-
-  cat("Returning data frame \n")
-  return(data.frame(
-      patch = patch_polygons$patches,
-      area_m2 = area_m2,
-      longitude = df_centroids$x,
-      latitude = df_centroids$y
-    )
-  )
-}
-
-
-
-## 2.2 Species - specific graphs ----------------------------------------------------------
-
-
+## 2.1 Species - specific graphs ----------------------------------------------------------
 # ## > G_supinum  -------------------------------------------------------
 # ### a. present ----------------------------------------------------------
 # g_supinum_pres_buff0 <- node_df_fun(g_supinum_pres_bin,
@@ -126,6 +81,10 @@ node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
 #                                       cell_res = 1,
 #                                       buffer_val = 3)
 
+gnap_pres_k_buff3 <- node_df_fun(gnap_pres_bin_k,
+                                 direction = 8,
+                                 cell_res = 1,
+                                 buffer_val = 3)
 
 
 
@@ -142,7 +101,8 @@ df_graphs_list <- list(g_supinum_pres_buff0 = g_supinum_pres_buff0,
                 g_supinum_fut585_buff0 = g_supinum_fut585_buff0,
                 g_supinum_fut585_buff1 = g_supinum_fut585_buff1,
                 g_supinum_fut585_buff2 = g_supinum_fut585_buff2,
-                g_supinum_fut585_buff3 = g_supinum_fut585_buff3)
+                g_supinum_fut585_buff3 = g_supinum_fut585_buff3,
+                gnap_pres_k_buff3 = gnap_pres_k_buff3)
 
 graphs_path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/species_specific_df/"
 

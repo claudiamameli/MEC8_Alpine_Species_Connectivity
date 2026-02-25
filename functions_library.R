@@ -25,6 +25,48 @@ library(gam)
 
 
 # Functions ---------------------------------------------------------------
+# Nodes creation function
+node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
+  
+  # Connect neighbouring cells (direction = 8 for corners, = 4 for sides only)
+  cat("Creating patches \n")
+  patch_data <- patches(original_map, directions = direction, zeroAsNA=T)
+  
+  # Calculate cell counts and area
+  cat("Counting cells \n")
+  patch_cell_count <- freq(patch_data, bylayer = FALSE)
+  area_m2 <- patch_cell_count$count * cell_res
+  
+  # Create polygons and find centroids
+  cat("Creating polygons and centroids \n")
+  patch_polygons <- as.polygons(patch_data, dissolve = TRUE)
+  df_centroids <- crds(centroids(patch_polygons), df = TRUE)
+  
+  # Buffer addition
+  if(is.null(buffer_val) == F){
+    cat("Adding buffer \n")
+    patch_polys_buffered <- buffer(patch_polygons, width = buffer_val)
+    
+    r_buffered <- rasterize(patch_polys_buffered, g_supinum_pres_bin, field = 1)
+    
+    buffer_patches <- patches(r_buffered, directions = direction)
+    patch_polygons <- as.polygons(buffer_patches, dissolve = TRUE)
+    
+    area_m2 <- expanse(patch_polygons, unit = "m")
+    df_centroids <- crds(centroids(patch_polygons), df = TRUE)
+  }
+  
+  
+  cat("Returning data frame \n")
+  return(data.frame(
+    patch = patch_polygons$patches,
+    area_m2 = area_m2,
+    longitude = df_centroids$x,
+    latitude = df_centroids$y
+  )
+  )
+}
+
 # Function for plotting nodes
 plot_nodes <- function(df, scenario, buffer) {
   ggplot(df, aes(x = longitude, y = latitude)) +
@@ -104,6 +146,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   # Modularity
   modules <- cluster_louvain(g) # switch to different function if needed
   m <- modularity(modules)
+  members <- membership(modules) # returns memberships based on modularity --> functional communities
   
   # Centrality metrics
   c_betwenness <- betweenness(g, directed=FALSE)
@@ -111,7 +154,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   deg_list <- degree(g)
   
   # Compute components
-  comp <- components(g, mode = "weak")  # Use mode = "strong" for directed Strongly Connected Component (SCC)
+  comp <- components(g)
   largest_size <- max(comp$csize)  
   total_nodes <- vcount(g)   
   fraction <- largest_size / total_nodes  # Fraction of nodes in largest component
@@ -129,9 +172,11 @@ euclidean_network_e2e <- function(d, df_patch) {
     distance = d, 
     connectance = c, 
     modularity = m,
+    membership = members,
     betweenness = c_betwenness,
     closeness = c_closeness,
     degree = deg_list,
+    components = comp,
     comp_number = comp$no,
     largest_comp = largest_size,
     fraction_comp = fraction,
@@ -144,7 +189,7 @@ euclidean_network_e2e <- function(d, df_patch) {
 #' Function for plotting graph 
 #' g --> graph from the euclidean_network_e2e function
 #' d --> distance used for the network creation
-graph_plot_fun <- function(g, d, title){ 
+graph_plot_fun <- function(g, d, title, colour = "black"){ 
   nodes <- igraph::as_data_frame(g, what = "vertices")
 
   layout_coords <- nodes %>%
@@ -158,7 +203,7 @@ graph_plot_fun <- function(g, d, title){
        vertex.size = log10(nodes$area_m2),
        #vertex.label = V(g)$name,
        vertex.label = "",
-       vertex.color = "black",
+       vertex.color = colour,
        edge.color = "red",
        edge.width = 2,
        main = paste0(title, " Spatial Network, d = ",d))

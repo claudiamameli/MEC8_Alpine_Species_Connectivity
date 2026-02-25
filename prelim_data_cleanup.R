@@ -336,7 +336,42 @@ path_tifs <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/gis_map_overlay
 
 
 
-# Regression line  --------------------------------------------------------
+# 7. Maps from Kristof - correct predictions ------------------------------
+path_map_gnap_k <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/gnap_sup_pres"
+files_map_gnap_k <- list.files(path_map_gnap_k ,pattern = "tif$", full.names=T)
+
+list2env(setNames(lapply(files_map_gnap_k, rast),
+                  tools::file_path_sans_ext(basename(files_map_gnap_k))), envir = .GlobalEnv)
+
+plot(AAA_occurprob_Gnaphalium_supinum)
+plot(Gnaphalium_supinum)
+
+gnap_suitability_map <- AAA_occurprob_Gnaphalium_supinum
+gnap_occurence_map <- as.numeric(Gnaphalium_supinum > 0) # changes into binary
+plot(gnap_occurence_map)
+
+gnap_suit_clipped <- mask(gnap_suitability_map, 
+                          gnap_occurence_map, 
+                          maskvalues = 0) # only checks for areas where there is predicted occurrence
+gnap_vals <- values(gnap_suit_clipped, na.rm=TRUE)
+hist(gnap_vals, breaks=50)
+
+gnap_intervals <- quantile(gnap_vals, probs=c(0.25, 0.5, 0.75)) #extrapolate 25-75 interval where the species are most likely to occur
+
+
+gnap_pres_bin_k <- ifel(gnap_suit_clipped >= gnap_intervals[1] & 
+                          gnap_suit_clipped <= gnap_intervals[3], 1, NA)
+
+plot(gnap_pres_bin_k)
+
+
+# Saving binary maps -------------------------------------------------------
+out_path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/final_overlay_maps"
+
+writeRaster(gnap_pres_bin_k, paste0(out_path, "/gnap_pres_bin_k.tif"))
+
+
+# PRELIM. Regression line - Needs work --------------------------------------------------------
 full_data_df_clean <- na.omit(full_data_df)
 
 gnap_glm <- glm(data = full_data_df_clean, 

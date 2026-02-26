@@ -81,7 +81,9 @@ plot(g_supinum_fut585_bin)
 #                                       cell_res = 1,
 #                                       buffer_val = 3)
 
-gnap_pres_k_buff3 <- node_df_fun(gnap_pres_bin_k,
+
+# From K  -----------------------------------------------------------------
+gnap_pres_buff3 <- node_df_fun(gnap_pres_bin_k,
                                  direction = 8,
                                  cell_res = 1,
                                  buffer_val = 3)
@@ -102,7 +104,7 @@ df_graphs_list <- list(g_supinum_pres_buff0 = g_supinum_pres_buff0,
                 g_supinum_fut585_buff1 = g_supinum_fut585_buff1,
                 g_supinum_fut585_buff2 = g_supinum_fut585_buff2,
                 g_supinum_fut585_buff3 = g_supinum_fut585_buff3,
-                gnap_pres_k_buff3 = gnap_pres_k_buff3)
+                gnap_pres_buff3 = gnap_pres_buff3)
 
 graphs_path <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/species_specific_df/"
 

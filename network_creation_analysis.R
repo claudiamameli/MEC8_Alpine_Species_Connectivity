@@ -17,14 +17,14 @@ list2env(setNames(lapply(graph_df, read.csv),
 
 
 # 1. Node Visualisation and Distribution of area values  -------------------------------------------------
-plot_nodes(gnap_pres_k_buff3, "Present", "3")
-# plot_nodes(gnap_fut_k_buff3, "Future, "3") # to be created
+plot_nodes(gnap_pres_buff3, "Present", "3")
+# plot_nodes(gnap_fut_buff3, "Future, "3") # to be created
 
 
 
 g_supinum_buff3 <- bind_rows(
-  gnap_pres_k_buff3 %>% mutate(scenario = "Present", buffer = "3")
-  # , gnap_pres_k_buff3 %>% mutate(scenario = "Future", buffer = "3")
+  gnap_pres_buff3 %>% mutate(scenario = "Present", buffer = "3")
+  # , gnap_fut_buff3 %>% mutate(scenario = "Future", buffer = "3")
 )
 
 # Order scenarios for visualisation
@@ -49,7 +49,7 @@ ggplot(subset(g_supinum_buff3, buffer == "3"),
 # See "functions_script" for full function
 
 ## 2.1 G. supinum networks ------------------------------------------------------
-gnap_pres_net <- euclidean_network_e2e(50, gnap_pres_k_buff3)
+gnap_pres_net <- euclidean_network_e2e(50, gnap_pres_buff3)
 # future need to be added <<<<<<<<<
 
 
@@ -64,7 +64,7 @@ gnap_net_metrics <- data.frame(
 ))
 
 ### c. Node Metrics ---------------------------------------------------------
-gnap_pres_node_metrics <- node_metrics_fun(gnap_pres_net, gnap_pres_k_buff3) 
+gnap_pres_node_metrics <- node_metrics_fun(gnap_pres_net, gnap_pres_buff3) 
 # add future when you have it <<<<<<
 
 
@@ -78,9 +78,9 @@ pres_random_mod <- random_mod_cal_fun(gnap_pres_net$graph, 1000)
 hist(pres_random_mod, breaks = 10, col = "#A4C9EC",
      main = "Distribution of Modularity\n (Degree-controlled Random Graphs)",
      xlab = "Modularity",
-     xlim = c(min(pres_random_mod, na.rm = TRUE),
+     xlim = c(round(min(pres_random_mod),1), na.rm = TRUE),
               max(c(max(pres_random_mod), gnap_net_metrics$modularity), na.rm = TRUE))
-)
+
 abline(v = gnap_net_metrics$modularity, col = "#FF4000", lwd = 2)
 legend("topright", legend = "Real Network Modularity", col = "#FF4000", lwd = 2)
 
@@ -104,15 +104,19 @@ g_gnap_pres <- gnap_pres_net$graph
 vcount(g_gnap_pres)
 ecount(g_gnap_pres)
 transitivity(g_gnap_pres) # clustering coefficient
+transitivity(g_gnap_pres, "local")  # Per-patch
+mean(transitivity(g_gnap_pres, "local"), na.rm=TRUE)
+
 components(g_gnap_pres)
 mean(degree(g_gnap_pres))
 
-hist(degree(g_gnap_pres), xlim = c(0, 300), breaks = 60)
+hist(degree(g_gnap_pres), xlim = c(0, max(degree(g_gnap_pres))), breaks = 30)
 text(x = max(degree(g_gnap_pres)),
      y = 1,
      labels = "*",
      col = "black",
      cex = 4)
+
 
 ### > Random network ----------------------------------------------------------
 random_net <- sample_correlated_gnp(g_gnap_pres, p = edge_density(g_gnap_pres), corr = 0.6)
@@ -126,7 +130,7 @@ mean(degree(random_net))
 
 
 #Visualisation 
-hist(degree(random_net), xlim = c(0, 300), breaks = 60)
+hist(degree(random_net), xlim = c(0, max(degree(random_net))), breaks = 30)
 abline(v = mean(degree(g_gnap_pres)), col = "#FF4000", lwd = 2, lty = 2)
 text(x = 45,
      y = par("usr")[4] * 0.9,
@@ -141,19 +145,20 @@ text(x = max(degree(random_net)),
 
 
 ### > Scale-free network ------------------------------------------------------
-m_estimate <- ceiling(ecount(g_gnap_pres) / vcount(g_gnap_pres))
+m_estimate <- round(ecount(g_gnap_pres) / vcount(g_gnap_pres))
 
-set.seed(54367)
+
 scalefree_net <- sample_pa(n = vcount(g_gnap_pres), m = m_estimate, directed = FALSE, zero.appeal = 0)
+
 vcount(scalefree_net)
 ecount(scalefree_net)
 transitivity(scalefree_net) 
 components(scalefree_net)
 mean(degree(scalefree_net))
-?sample_pa
+
 #Visualisation 
 
-hist(degree(scalefree_net), xlim = c(0, max(degree(scalefree_net))))
+hist(degree(scalefree_net), xlim = c(0, max(degree(scalefree_net))), breaks = 30)
 abline(v = mean(degree(g_gnap_pres)), col = "#FF4000", lwd = 2, lty = 2)
 text(x = 20,
      y = par("usr")[4] * 0.9,
@@ -166,14 +171,4 @@ text(x = max(degree(scalefree_net)),
      col = "black",
      cex = 4)
 
-
-### > Small-world network -----------------------------------------------------
-sw_net <- sample_smallworld(dim = 1, size = vcount(g_gnap_pres), nei = floor(mean(degree(g_gnap_pres))/2), p = 0.1)
-
-hist(degree(sw_net))
-
-#' Problem is that when we are attaching edges to the scale-free it is impossible to attach less than 1 edge per node, so our histograms might become extremely skewed.
-#' Generally, this type of analysis is easier when you have well connected networks
-
-
-
+# Create table with transitivity etc <<<<<< 

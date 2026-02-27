@@ -336,7 +336,7 @@ path_tifs <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/gis_map_overlay
 
 
 
-# 7. Maps from Kristof - correct predictions + threshold analysis from lectures ------------------------------
+# 7. Maps from Kristof - correct predictions ------------------------------
 path_map_gnap_k <- "~/Desktop/Repositories/MEC8_Snowbed_Alpine_Species/Data/gnap_sup_pres"
 files_map_gnap_k <- list.files(path_map_gnap_k ,pattern = "tif$", full.names=T)
 
@@ -353,12 +353,12 @@ plot(gnap_occurence_map)
 gnap_suit_clipped <- mask(gnap_suitability_map, 
                           gnap_occurence_map, 
                           maskvalues = 0) # only checks for areas where there is predicted occurrence
+plot(gnap_suit_clipped)
 
 gnap_vals <- values(gnap_suit_clipped, na.rm=TRUE)
 hist(gnap_vals, breaks=50)
 
-gnap_q75_cutoff <- quantile(gnap_vals, probs= 0.75) # extrapolate 75 cutoff where the species are most likely to occur
-
+gnap_q75_cutoff <- quantile(gnap_vals, probs= 0.75) # extrapolate 75 cutoff where the suitability is highest
 
 gnap_pres_bin_k <- ifel(gnap_suit_clipped >= gnap_q75_cutoff, 1, NA)
 

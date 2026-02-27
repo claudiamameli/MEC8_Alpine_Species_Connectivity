@@ -53,7 +53,8 @@ node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
     buffer_patches <- patches(r_buffered, directions = direction)
     patch_polygons <- as.polygons(buffer_patches, dissolve = TRUE)
     
-    area_m2 <- expanse(patch_polygons, unit = "m")
+    patch_cell_count <- freq(buffer_patches, bylayer = FALSE)
+    area_m2 <- patch_cell_count$count * cell_res
     df_centroids <- crds(centroids(patch_polygons), df = TRUE)
   }
   

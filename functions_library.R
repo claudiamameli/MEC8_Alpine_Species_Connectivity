@@ -28,35 +28,30 @@ library(tidyverse)
 # Functions ---------------------------------------------------------------
 # Nodes creation function
 node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
-  
-  # Connect neighbouring cells (direction = 8 for corners, = 4 for sides only)
-  cat("Creating patches \n")
-  patch_data <- patches(original_map, directions = direction, zeroAsNA=T)
-  
-  # Calculate cell counts and area
-  cat("Counting cells \n")
-  patch_cell_count <- freq(patch_data, bylayer = FALSE)
-  area_m2 <- patch_cell_count$count * cell_res
+  # Buffer addition
+  if(is.null(buffer_val) == F){
+    cat("Adding buffer \n")
+    r_buffered <- as.numeric(buffer(original_map, width = buffer_val))
+    r_buffered[r_buffered[] == 0] <- NA
+    
+    cat("Creating patches\n")
+    # Connect neighbouring cells (direction = 8 for corners, = 4 for sides only)
+    patch_data <- patches(r_buffered, directions = direction)
+    
+  } else {
+    cat("Creating patches\n")
+    patch_data <- patches(original_map, directions = direction, zeroAsNA=T)
+  }
   
   # Create polygons and find centroids
   cat("Creating polygons and centroids \n")
   patch_polygons <- as.polygons(patch_data, dissolve = TRUE)
   df_centroids <- crds(centroids(patch_polygons), df = TRUE)
   
-  # Buffer addition
-  if(is.null(buffer_val) == F){
-    cat("Adding buffer \n")
-    patch_polys_buffered <- buffer(patch_polygons, width = buffer_val)
-    
-    r_buffered <- rasterize(patch_polys_buffered, original_map, field = 1)
-    
-    buffer_patches <- patches(r_buffered, directions = direction)
-    patch_polygons <- as.polygons(buffer_patches, dissolve = TRUE)
-    
-    patch_cell_count <- freq(buffer_patches, bylayer = FALSE)
-    area_m2 <- patch_cell_count$count * cell_res
-    df_centroids <- crds(centroids(patch_polygons), df = TRUE)
-  }
+  # Calculate cell counts and area
+  cat("Counting cells \n")
+  patch_cell_count <- freq(patch_data, bylayer = FALSE)
+  area_m2 <- patch_cell_count$count * cell_res
   
   
   cat("Returning data frame \n")
@@ -68,6 +63,7 @@ node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
   )
   )
 }
+
 
 # Function for plotting nodes
 plot_nodes <- function(df, scenario, buffer) {

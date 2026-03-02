@@ -132,7 +132,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   
   # Connectance (number of realised links / number of all possible links)
   n = nrow(m_adj) # number of patches
-  c = sum(m_adj) / (n*(n-1))
+  c = sum(m_adj) / (n*(n-1)/2)
   
   # Calculate PC (Probability of connectivity - area-weighted) 
   total_area <- sum(df_patch$area_m2)

@@ -3,35 +3,232 @@ library(caseconverter)
 library(colorRamps)
 library(cowplot)
 library(cluster)
+library(foreach)
+library(furrr)
 library(gam)
 library(ggplot2)
 library(ggridges)
 library(gpkg)
 library(igraph)
+library(irr)
 library(networktools)
 library(mgcv)
 library(paletteer)
 library(patchwork)
 library(PresenceAbsence)
+library(pROC)
+library(randomForest)
 library(raster)
 library(RColorBrewer)
 library(readxl)
+library(rsample)
 library(rworldmap)
 library(sf)
 library(sp)
+library(tictoc)
 library(terra)
+library(tidymodels)
 library(tidyverse)
 
+# SDMs Functions ----------------------------------------------------------
+#' The followings fit_* models are teh basis for the full model evaluation function
+#' Make sure the predictors are well defined within the 3 functions and their nomenclature matches that of the data frame provided
+#' df is the dataframe with all presence/absence values (the response variable) and values for the predictors (the explanatory variables)
+
+fit_gam <- function(df) {
+  gam_model <- bam(
+    value ~ s(temperature) +
+      s(snow) +
+      s(carbon) +
+      s(SLP_1) + 
+      s(HSD_1) +
+      s(TWI_25) +
+      s(TPI_3),
+    data = df, 
+    family = binomial
+  )
+  return(gam_model)
+}
+
+fit_glm <- function(df) {
+  glm(
+    value ~
+      poly(temperature, 2) +
+      poly(snow, 2) +
+      poly(carbon, 2) +
+      poly(SLP_1, 2) +
+      poly(HSD_1, 2) +
+      poly(TWI_25, 2) +
+      poly(TPI_3, 2),
+    data = df,
+    family = binomial
+  )
+}
+
+fit_rf <- function(df) {
+  rf_model <- randomForest(
+    value ~ temperature + 
+      snow + 
+      carbon +
+      SLP_1 + 
+      HSD_1 + 
+      TWI_25 + 
+      TPI_3,
+    data = df |> mutate(value = factor(value)), 
+    family = binomial()
+  )
+  return(rf_model)
+}
+
+# Compute TSS (True Skill Statistic) values - measures the performance of the models
+get_tss <- function(m, df) {
+  if (class(m)[2] == "randomForest") {
+    prediction <- data.frame(predict(m, df, type = "prob"))$X1
+  } else {
+    prediction <- predict(m, df, type = "response")
+  }
+  
+  auc <- as.numeric(roc(df$value, prediction, quiet = T)$auc)
+  vals <- coords(roc(df$value, prediction, quiet = T), "best")[1, ]
+  predicted_binary <- ifelse(prediction > vals$threshold[[1]], 1, 0)
+  accuracy <- mean(predicted_binary == df$value)
+  tss <- vals$sensitivity[1] + vals$specificity[1] - 1
+  
+  
+  stats <- tibble(
+    predicted = prediction,
+    observed = df$value,
+    TSS = tss,
+    sensitivity = vals$sensitivity,
+    specificity = vals$specificity,
+    threshold = vals$threshold,
+    accuracy = accuracy,
+    auc = auc
+  )
+  return(stats)
+}
 
 
 
-# Functions ---------------------------------------------------------------
+# Compute final TSS for all models
+get_final_tss <- function(df) {
+  auc <- as.numeric(roc(df$observed, df$predicted, quiet = T)$auc)
+  vals <- coords(roc(df$observed, df$predicted, quiet = T), "best")
+  predicted_binary <- ifelse(df$predicted > vals$threshold[[1]], 1, 0)
+  accuracy <- mean(predicted_binary == df$observed)
+  tss <- vals$sensitivity[1] + vals$specificity[1] - 1
+  
+  out <- tibble(
+    threshold = vals$threshold[[1]],
+    TSS = tss, 
+    sensitivity = vals$sensitivity,
+    specificity = vals$specificity,
+    auc = auc,
+    accuracy = accuracy
+  )
+  return(out)
+}
+
+# Outputs statistics for the models calculating thresholds for the current data
+# input_data = the dataframe with presence/absence data and extracted values for all predictors at specific GEOM point
+get_model_stats <- function(input_data) {
+  
+  vfold_cv(input_data, strata = value, v = 5) |>
+    mutate(output = map(splits, \(mdf){
+      list(
+        get_tss(fit_glm(analysis(mdf)), assessment(mdf)) |>
+          mutate(model = "glm"),
+        get_tss(fit_gam(analysis(mdf)), assessment(mdf)) |>
+          mutate(model = "gam"),
+        get_tss(fit_rf(analysis(mdf)), assessment(mdf)) |>
+          mutate(model = "rf")
+      ) |>
+        bind_rows()
+    })) |>
+    select(output) |>
+    unnest() -> out
+  
+  out |>
+    group_by(model) |>
+    mutate(id = row_number()) |>
+    ungroup() |>
+    group_by(id) |>
+    summarise(
+      predicted = weighted.mean(predicted, w = TSS),
+      observed = mean(observed)
+    ) |>
+    get_final_tss() |>
+    mutate(model = "ensemble") -> final_TSS
+  
+  out |>
+    summarise(across(TSS:auc, mean), .by = model) |>
+    bind_rows(final_TSS) -> stats
+  
+  stats
+}
+
+
+# Computes ensemble prediction for current and future conditions and scenarios
+# input_data = same as above
+# rs_df = raster dataframe - with all predictor values
+# stats = stats produced from the get_model_stats() output
+
+get_ensemble_prediction <- function(input_data, rs_df, stats) {
+
+  # glm
+  glm_prediction <- rs_df[c("x", "y")] |> bind_cols(predict(fit_glm(input_data), rs_df, type = "response"))
+  glm_prob <- rast(glm_prediction, crs = "EPSG:3035") |> setNames(paste("GLM"))
+  glm_class <- ifel(glm_prob > stats$threshold[stats$model == "glm"], 1, 0)
+  
+  # gam
+  m_gam <- fit_gam(input_data)
+  prediction <- rs_df |>
+    select(-x, -y) |>
+    group_by(chunk = ntile(row_number(), 32)) |> #
+    group_split() |>
+    future_map(\(x) predict(m_gam, x, type = "response")) |>
+    unlist() |>
+    as_tibble()
+  
+  gam_prob <- bind_cols(rs_df[c("x", "y")], prediction) |>
+    rast(crs = "EPSG:3035") |>
+    setNames("GAM")
+  gam_class <- ifel(gam_prob > stats$threshold[stats$model == "gam"], 1, 0)
+  
+  # rf
+  rf_prediction <- rs_df[c("x", "y")] |> bind_cols(predict(fit_rf(input_data), rs_df, type = "prob")[, 2])
+  rf_prob <- rast(rf_prediction, crs = "EPSG:3035") |> setNames("RF")
+  rf_class <- ifel(rf_prob > stats$threshold[stats$model == "rf"], 1, 0)
+  
+  ensemble_prediction <- terra::weighted.mean(
+    x = c(
+      glm_prob,
+      gam_prob,
+      rf_prob
+    ),
+    w = c(
+      stats$TSS[stats$model == "glm"],
+      stats$TSS[stats$model == "gam"],
+      stats$TSS[stats$model == "rf"]
+    )
+  )
+  
+  ensemble_prediction_class <- ifel(ensemble_prediction > stats$threshold[stats$model == "ensemble"], 1, 0) |>
+    setNames("ensemble_prediction")
+  
+  return(ensemble_prediction_class)
+}
+
+
+# Graph Functions ---------------------------------------------------------------
 # Nodes creation function
 node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
+  original_map[original_map[] == 0] <- NA
+  
   # Buffer addition
   if(is.null(buffer_val) == F){
     cat("Adding buffer \n")
-    r_buffered <- as.numeric(buffer(original_map, width = buffer_val))
+    r_buffered <- as.numeric(terra::buffer(original_map, width = buffer_val))
     r_buffered[r_buffered[] == 0] <- NA
     
     cat("Creating patches\n")
@@ -64,14 +261,13 @@ node_df_fun <- function(original_map, direction, cell_res, buffer_val = NULL){
   )
 }
 
-
 # Function for plotting nodes
-plot_nodes <- function(df, scenario, buffer) {
+plot_nodes <- function(df, scenario, species) {
   ggplot(df, aes(x = longitude, y = latitude)) +
     geom_point(size = 0.4) +
     coord_fixed() +
     theme_bw() +
-    labs(title = paste(scenario, ", Buffer", buffer)) +
+    labs(title = paste(species, " - ", scenario, " Scenario")) +
     theme(
       axis.text  = element_blank(),
       axis.ticks = element_blank(),
@@ -149,7 +345,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   # Centrality metrics
   c_betwenness <- betweenness(g, directed=FALSE)
   c_closeness <- closeness(g)
-  deg_list <- degree(g)
+  deg_list <- igraph::degree(g)
   
   # Compute components
   comp <- components(g)
@@ -252,9 +448,63 @@ node_metrics_fun <- function(full_results, original_node_df){
 random_mod_cal_fun <- function(g, num_graphs) {
   random_modularity <- numeric(num_graphs)
   for (i in 1:num_graphs) {
-    g_rand <- sample_degseq(degree(g), method = "configuration")
+    g_rand <- sample_degseq(igraph::degree(g), method = "configuration")
     mod_rand <- cluster_louvain(g_rand) #can be changed to other clustering functions - for comparison better to match with same as in euclidean_network_e2e function
     random_modularity[i] <- modularity(mod_rand)
   }
   return(random_modularity)
+}
+
+# Extra Visualisation Functions ---------------------------------------------------------------
+plot_changes <- function(current, future, scenario, species) {
+  change <- current + 2 * future
+  # Map values to categories
+  # 0: 0+0*2 = 0 → No presence
+  # 1: 1+0*2 = 1 → Lost
+  # 2: 0+1*2 = 2 → Gained
+  # 3: 1+1*2 = 3 → Stable
+  categories <- c("No presence", "Lost", "Gained", "Stable")
+  change_cat <- classify(change, cbind(0:3, 0:3))
+  values(change_cat) <- categories[values(change_cat) + 1]
+  df <- as.data.frame(change_cat, xy = TRUE)
+  colnames(df) <- c("x", "y", "change")
+  dummy <- tibble(
+    x = NA, y = NA,
+    change = factor(categories, levels = categories)
+  )
+  bind_rows(df, dummy) |>
+    ggplot(aes(x = x, y = y, fill = factor(change, levels = categories))) +
+    geom_raster() +
+    annotate(
+      "text",
+      x = min(df$x), # left
+      y = max(df$y), # top
+      label = scenario,
+      hjust = 0, # align left
+      vjust = 1, # align top
+      size = 5
+    ) +
+    scale_fill_manual(values = c(
+      "No presence" = "grey90",
+      "Lost"        = "red",
+      "Gained"      = "green",
+      "Stable"      = "blue"
+    ), drop = F) +
+    coord_equal() +
+    theme_bw() +
+    labs(
+      subtitle = paste0("TSS: ", round(stats_out$TSS[stats_out$model == "ensemble"], 2)),
+      fill = "Change category",
+      title = paste0(species)
+    ) +
+    theme(
+      legend.position = c(1, 1), legend.justification = c(1, 1),
+      legend.background = element_blank(),
+      plot.title = element_text(face = "italic"),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank(),
+      panel.grid = element_blank()
+    ) ->p
+  return(p)
 }

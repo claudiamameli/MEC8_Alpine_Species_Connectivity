@@ -6,11 +6,10 @@
 .RProfile
 Data/*
 Data/.DS_Store
-old_scripts/*
-old_scripts
 .RDataTmp*
 gis_map_overlay/*
 *.docx
 species_specific_df/*.xlsx
 photos_for_protocol/
 species_specific_df/old_tables/*
+old_scripts_data/*

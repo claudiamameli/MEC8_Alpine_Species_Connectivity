@@ -15,6 +15,7 @@ library(networktools)
 library(mgcv)
 library(paletteer)
 library(patchwork)
+library(plyr)
 library(PresenceAbsence)
 library(pROC)
 library(randomForest)
@@ -87,7 +88,6 @@ fit_rf <- function(df) {
       TWI_25 + 
       TPI_3,
     data = df |> mutate(value = factor(value)), 
-    family = binomial()
   )
   return(rf_model)
 }
@@ -534,7 +534,7 @@ plot_changes <- function(current, future, scenario, species) {
   return(p)
 }
 
-hist_rand_degree <- function(random_mod, real_mod, bin, scenario){
+hist_rand_mod <- function(random_mod, real_mod, bin, scenario){
   hist(random_mod, breaks = bin, col = "#A4C9EC",
        main = "Distribution of Modularity\n (Degree-controlled Random Graphs)",
        xlab = "Modularity",
@@ -542,4 +542,31 @@ hist_rand_degree <- function(random_mod, real_mod, bin, scenario){
        max(c(max(random_mod), real_mod), na.rm = TRUE))
   abline(v = real_mod, col = "#FF4000", lwd = 2)
   legend("topright", legend = paste0(scenario," Network Modularity"), col = "#FF4000", lwd = 2)
-  }
+}
+
+
+hist_degree <- function(g, title){
+  deg <- igraph::degree(g)
+  mean_deg <- round(mean(deg), 2)
+  xmax <- round_any(max(deg), 50, f = ceiling) # can change 50 to 100 or 10
+  
+  hist(deg, 
+       xlim = c(0, xmax), 
+       breaks = 100,
+       xaxt = "n", 
+       main = paste0("Degree Distribution - ", title),
+       xlab = "Node Degree")
+  axis(1, at = seq(0, xmax, by = 50)) # 'by' can be changed if needed
+  abline(v = mean(deg), col = "#FF4000", lwd = 2, lty = 2)
+  text(x = mean_deg + 1,
+       y = par("usr")[4] * 0.9,
+       pos = 4,
+       labels = paste("Mean = ", mean_deg),
+       col = "#FF4000",
+       cex = 1)
+  text(x = max(deg),
+       y = 1,
+       labels = "*",
+       col = "black",
+       cex = 3)
+}

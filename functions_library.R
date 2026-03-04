@@ -30,6 +30,18 @@ library(terra)
 library(tidymodels)
 library(tidyverse)
 
+
+# Read file functions -----------------------------------------------------
+# read_function = eg. read.csv or readRDS
+read_file_fun <- function(path, read_function){
+  list_ <- list.files(path, full.names = TRUE)
+  names <- tools::file_path_sans_ext(basename(list_))
+  
+  list2env(setNames(lapply(list_, read_function),
+                    names),
+           envir = .GlobalEnv)
+}
+
 # SDMs Functions ----------------------------------------------------------
 #' The followings fit_* models are teh basis for the full model evaluation function
 #' Make sure the predictors are well defined within the 3 functions and their nomenclature matches that of the data frame provided
@@ -455,6 +467,11 @@ random_mod_cal_fun <- function(g, num_graphs) {
   return(random_modularity)
 }
 
+# Modularity Z-score
+mod_z_score <- function(random_mod, real_mod){
+  (real_mod - mean(random_mod, na.rm = TRUE)) / sd(random_mod, na.rm = TRUE)
+  }
+
 # Extra Visualisation Functions ---------------------------------------------------------------
 plot_changes <- function(current, future, scenario, species) {
   change <- current + 2 * future
@@ -508,3 +525,13 @@ plot_changes <- function(current, future, scenario, species) {
     ) ->p
   return(p)
 }
+
+hist_rand_degree <- function(random_mod, real_mod, bin, scenario){
+  hist(random_mod, breaks = bin, col = "#A4C9EC",
+       main = "Distribution of Modularity\n (Degree-controlled Random Graphs)",
+       xlab = "Modularity",
+       xlim = c(round(min(random_mod),1), na.rm = TRUE),
+       max(c(max(random_mod), real_mod), na.rm = TRUE))
+  abline(v = real_mod, col = "#FF4000", lwd = 2)
+  legend("topright", legend = paste0(scenario," Network Modularity"), col = "#FF4000", lwd = 2)
+  }

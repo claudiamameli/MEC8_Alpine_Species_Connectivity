@@ -338,6 +338,10 @@ euclidean_network_e2e <- function(d, df_patch) {
   
   print('5/7: Edges and graph created')
   
+  # Global and local transitivity
+  g_trans <- transitivity(g) # clustering coefficient
+  l_trans <- mean(transitivity(g, "local"), na.rm=TRUE)   # Mean transitivity per-patch
+  
   # Connectance (number of realised links / number of all possible links)
   n = nrow(m_adj) # number of patches
   c = sum(m_adj) / (n*(n-1)/2)
@@ -378,6 +382,8 @@ euclidean_network_e2e <- function(d, df_patch) {
     distance = d, 
     connectance = c, 
     modularity = m,
+    global_trans = g_trans, 
+    local_trans = l_trans,
     membership = members,
     betweenness = c_betwenness,
     closeness = c_closeness,
@@ -422,6 +428,8 @@ net_metrics_fun <-  function(full_results, scenario_){
   percent_connected = full_results$percent_connected,
   connectance = full_results$connectance,
   modularity = full_results$modularity,
+  global_trans = full_results$global_trans,
+  local_trans = full_results$local_trans,
   comp_number = full_results$comp_number, 
   comp_largest = full_results$largest_comp,
   comp_fraction = full_results$fraction_comp,

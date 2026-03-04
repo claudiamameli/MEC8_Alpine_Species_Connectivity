@@ -365,6 +365,7 @@ euclidean_network_e2e <- function(d, df_patch) {
   
   # Compute components
   comp <- components(g)
+  comp_number <- comp$no - sum(comp$csize == 1) # Not including isolated patches
   largest_size <- max(comp$csize)  
   total_nodes <- vcount(g)   
   fraction <- largest_size / total_nodes  # Fraction of nodes in largest component
@@ -389,7 +390,8 @@ euclidean_network_e2e <- function(d, df_patch) {
     closeness = c_closeness,
     degree = deg_list,
     components = comp,
-    comp_number = comp$no,
+    comp_number = comp_number,
+    isolated_patches = sum(comp$csize == 1),
     largest_comp = largest_size,
     fraction_comp = fraction,
     percent_connected = percent_connected,
@@ -430,7 +432,8 @@ net_metrics_fun <-  function(full_results, scenario_){
   modularity = full_results$modularity,
   global_trans = full_results$global_trans,
   local_trans = full_results$local_trans,
-  comp_number = full_results$comp_number, 
+  comp_number = full_results$comp_number,
+  isolated_patches = full_results$isolated_patches,
   comp_largest = full_results$largest_comp,
   comp_fraction = full_results$fraction_comp,
   prob_connectivity = full_results$prob_conn,

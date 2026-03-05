@@ -206,7 +206,16 @@ degree_summary <- data.frame(
                   round(mean(igraph::degree(scalefree_net_ssp245)), 2),
                   round(mean(igraph::degree(g_gnap_ssp585)), 2),
                   round(mean(igraph::degree(random_net_ssp585)), 2), 
-                  round(mean(igraph::degree(scalefree_net_ssp585)), 2)))
+                  round(mean(igraph::degree(scalefree_net_ssp585)), 2)),
+  max_degree = c(max(igraph::degree(g_gnap_pres)), 
+                 max(igraph::degree(random_net)), 
+                 max(igraph::degree(scalefree_net)),
+                 max(igraph::degree(g_gnap_ssp245)), 
+                 max(igraph::degree(random_net_ssp245)), 
+                 max(igraph::degree(scalefree_net_ssp245)),
+                 max(igraph::degree(g_gnap_ssp585)),
+                 max(igraph::degree(random_net_ssp585)), 
+                 max(igraph::degree(scalefree_net_ssp585))))
 
 degree_summary
 

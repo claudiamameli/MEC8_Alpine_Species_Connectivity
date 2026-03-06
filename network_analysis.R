@@ -7,10 +7,44 @@ set.seed(54367) # Setting seed for random calculations
 read_file_fun("graph_df/", read.csv)
 read_file_fun("graph_files/", readRDS)
 
+graph_plot_fun(gnap_pres_net$graph, 50, "Present")
+graph_plot_fun(gnap_ssp245_net$graph, 50, "Future spp2-4.5")
+graph_plot_fun(gnap_ssp585_net$graph, 50, "Future ssp5-8.5")
 
+# 1.Area vs node degree -----------------------------------------------------
+ggplot(gnap_pres_node_metrics, aes(y = log10(degree + 1), x = log10(area_m2))) +
+  geom_point()+
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Patch Area log10(m²)", y = "Node Degree log10(n + 1)")+
+  theme_bw()
 
-# 3. Network Analysis -----------------------------------------------------
-## 3.1 Modularity ----------------------------------------------------
+dfs <- list(
+  present = gnap_pres_node_metrics,
+  fut245  = gnap_fut245_node_metrics,
+  fut585  = gnap_fut585_node_metrics
+)
+
+for (name in names(dfs)) {
+  cat("\n=== Model for", name, "===\n")
+  model <- lm(degree ~ area_m2, data = dfs[[name]])
+  print(summary(model))
+}
+
+for (name in names(dfs)) {
+  p <- ggplot(dfs[[name]], aes(y = log10(degree + 1), x = log10(area_m2))) +
+    geom_point() +
+    geom_smooth(method = "lm", se = TRUE) +
+    labs(
+      title = name,
+      x = "Patch area log10(m²)",
+      y = "Node degree log10(n + 1)"
+    ) +
+    theme_bw()
+  
+  print(p)
+}
+
+# 2. Modularity ----------------------------------------------------
 ### a. Present -----------------------------------------------------------
 pres_random_mod <- random_mod_cal_fun(gnap_pres_net$graph, 1000)
 pres_mod <- gnap_net_metrics$modularity[gnap_net_metrics$scenario == "pres"]
@@ -68,7 +102,7 @@ modularity_summary <- data.frame(
 
 modularity_summary
 
-## 3.2 Degree distribution ------------------------------------
+## 3. Degree distribution ------------------------------------
 # This section aims to understand which degree distribution our network has to classify if the networks are closer to a random, scale-free or small-world network.
 
 ### a. Present -----------------------------------------------------------------

@@ -547,7 +547,6 @@ hist_rand_mod <- function(random_mod, real_mod, bin, scenario){
   legend("topright", legend = paste0(scenario," Network Modularity"), col = "#FF4000", lwd = 2)
 }
 
-
 hist_degree <- function(g, title){
   deg <- igraph::degree(g)
   mean_deg <- round(mean(deg), 2)

@@ -484,7 +484,7 @@ mod_z_score <- function(random_mod, real_mod){
   }
 
 # Extra Visualisation Functions ---------------------------------------------------------------
-plot_changes <- function(current, future, scenario, species) {
+plot_changes <- function(current, future, scenario, species, panel_n) {
   change <- current + 2 * future
   # Map values to categories
   # 0: 0+0*2 = 0 → No presence
@@ -494,47 +494,65 @@ plot_changes <- function(current, future, scenario, species) {
   categories <- c("No presence", "Lost", "Gained", "Stable")
   change_cat <- classify(change, cbind(0:3, 0:3))
   values(change_cat) <- categories[values(change_cat) + 1]
+  
   df <- as.data.frame(change_cat, xy = TRUE)
   colnames(df) <- c("x", "y", "change")
+  
   dummy <- tibble(
     x = NA, y = NA,
     change = factor(categories, levels = categories)
   )
+  
   bind_rows(df, dummy) |>
     ggplot(aes(x = x, y = y, fill = factor(change, levels = categories))) +
     geom_raster() +
+    
     annotate(
       "text",
-      x = min(df$x), # left
+      x = min(df$x), # right
       y = max(df$y), # top
-      label = scenario,
+      label = paste0(panel_n, scenario),
       hjust = 0, # align left
       vjust = 1, # align top
       size = 5
     ) +
-    scale_fill_manual(values = c(
-      "No presence" = "grey90",
-      "Lost"        = "red",
-      "Gained"      = "green",
-      "Stable"      = "blue"
+    
+    scale_fill_manual(
+      name = "Change category",
+      values = c(
+      "No presence" = "#DDDDDD",
+      "Lost"        = "#FF4000",
+      "Gained"      = "#00AA00",
+      "Stable"      = "#0072B2"
     ), drop = F) +
     coord_equal() +
     theme_bw() +
-    labs(
-      subtitle = paste0("TSS: ", round(stats_out$TSS[stats_out$model == "ensemble"], 2)),
-      fill = "Change category",
-      title = paste0(species)
-    ) +
+    
     theme(
-      legend.position = c(1, 1), legend.justification = c(1, 1),
-      legend.background = element_blank(),
-      plot.title = element_text(face = "italic"),
+      legend.position = "right",
+      legend.title = element_text(size = 18),
+      legend.text = element_text(size = 16),
       axis.text = element_blank(),
       axis.ticks = element_blank(),
       axis.title = element_blank(),
       panel.grid = element_blank()
-    ) ->p
-  return(p)
+    )
+    
+    # labs(
+    #   subtitle = paste0("TSS: ", round(stats_out$TSS[stats_out$model == "ensemble"], 2)),
+    #   fill = "Change category",
+    #   title = paste0(species)
+    # ) +
+    # theme(
+    #   legend.position = c(1, 1), legend.justification = c(1, 1),
+    #   legend.background = element_blank(),
+    #   plot.title = element_text(face = "italic"),
+    #   axis.text = element_blank(),
+    #   axis.ticks = element_blank(),
+    #   axis.title = element_blank(),
+    #   panel.grid = element_blank()
+    # ) ->p
+  # return(p)
 }
 
 hist_rand_mod <- function(random_mod, real_mod, bin, scenario){

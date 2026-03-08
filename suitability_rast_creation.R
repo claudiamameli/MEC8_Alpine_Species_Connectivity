@@ -133,5 +133,17 @@ list2env(setNames(lapply(files_rast, rast),
                   tools::file_path_sans_ext(basename(files_rast))), envir = .GlobalEnv)
 
 
-plot_changes(gnaphalium_supinum_current, gnaphalium_supinum_ssp245, "ssp245", "Gnaphalium Supinum")
-plot_changes(gnaphalium_supinum_current, gnaphalium_supinum_ssp585, "ssp585", "Gnaphalium Supinum")
+ssp245_change <- plot_changes(gnaphalium_supinum_current, gnaphalium_supinum_ssp245, "SSP2-4.5", "Gnaphalium supinum", "A) ")
+ssp585_change <- plot_changes(gnaphalium_supinum_current, gnaphalium_supinum_ssp585, "SSP5-8.5", "Gnaphalium supinum", "B) ")
+
+(ssp245_change | ssp585_change) +
+  plot_layout(guides = "collect") +
+  plot_annotation(
+    title = "Gnaphalium supinum",
+    subtitle = paste0("TSS: ", round(stats_out$TSS[stats_out$model == "ensemble"], 2))
+  ) &
+  theme(
+    plot.title = element_text(face = "italic", size = 14),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+  )

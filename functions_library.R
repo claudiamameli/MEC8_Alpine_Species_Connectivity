@@ -30,6 +30,7 @@ library(tictoc)
 library(terra)
 library(tidymodels)
 library(tidyverse)
+library(viridis)
 
 
 # Read file functions -----------------------------------------------------
@@ -400,29 +401,6 @@ euclidean_network_e2e <- function(d, df_patch) {
   ))
 }
 
-#' Function for plotting graph 
-#' g --> graph from the euclidean_network_e2e function
-#' d --> distance used for the network creation
-graph_plot_fun <- function(g, d, title, colour = "black"){ 
-  nodes <- igraph::as_data_frame(g, what = "vertices")
-
-  layout_coords <- nodes %>%
-    dplyr::select(name, longitude, latitude) %>%
-    filter(name %in% V(g)$name) %>%
-    arrange(match(name, V(g)$name)) %>%
-    dplyr::select(longitude, latitude) %>% 
-    as.matrix()
-  plot(g,
-       layout = layout_coords,
-       vertex.size = log10(nodes$area_m2),
-       #vertex.label = V(g)$name,
-       vertex.label = "",
-       vertex.color = colour,
-       edge.color = "red",
-       edge.width = 2,
-       main = paste0(title, " Spatial Network, d = ",d))
-}
-
 # Functions to create a full dataframe with the results from the euclidean_network_e2e function
 net_metrics_fun <-  function(full_results, scenario_){
   data.frame(
@@ -484,6 +462,49 @@ mod_z_score <- function(random_mod, real_mod){
   }
 
 # Extra Visualisation Functions ---------------------------------------------------------------
+#' Function for plotting graph 
+#' g --> graph from the euclidean_network_e2e function
+#' d --> distance used for the network creation
+graph_plot_fun <- function(g, d, title, colour = "black"){ 
+  nodes <- igraph::as_data_frame(g, what = "vertices")
+  
+  layout_coords <- nodes %>%
+    dplyr::select(name, longitude, latitude) %>%
+    filter(name %in% V(g)$name) %>%
+    arrange(match(name, V(g)$name)) %>%
+    dplyr::select(longitude, latitude) %>% 
+    as.matrix()
+  
+  # Change colours depending on grouping - dark grey for isolated nodes
+  if (!is.null(colour)) {
+    
+    group <- as.factor(colour)
+    n_groups <- length(levels(group))
+    palette <- viridis(n_groups,  option = "plasma")
+    
+    vertex_colors <- palette[as.numeric(group)]
+    
+    isolated <- igraph::degree(g) == 0
+    vertex_colors[isolated] <- "grey"  # dark grey
+  }
+  
+  plot(g,
+       layout = layout_coords,
+       vertex.size = log10(nodes$area_m2),
+       #vertex.label = V(g)$name,
+       vertex.label = "",
+       vertex.color = vertex_colors,
+       edge.color = "#FF4000",
+       # main = paste0(title, " Spatial Network, d = ",d)),
+       edge.width = 1.5)
+  
+  box()
+  usr <- par("usr")
+  x <- usr[1] + (usr[2] - usr[1]) * 0.04
+  y <- usr[4] - (usr[4] - usr[3]) * 0.04
+  text(x, y, labels = title, adj = c(0,1), cex = 1.2, font = 2)
+}
+
 plot_changes <- function(current, future, scenario, species, panel_n) {
   change <- current + 2 * future
   # Map values to categories

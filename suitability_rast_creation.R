@@ -143,7 +143,9 @@ ssp585_change <- plot_changes(gnaphalium_supinum_current, gnaphalium_supinum_ssp
     subtitle = paste0("TSS: ", round(stats_out$TSS[stats_out$model == "ensemble"], 2))
   ) &
   theme(
-    plot.title = element_text(face = "italic", size = 14),
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
+    plot.title = element_text(face = "italic", size = 20),
+    plot.subtitle = element_text(size = 18),
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
   )
+

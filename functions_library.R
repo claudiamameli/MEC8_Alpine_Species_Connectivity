@@ -514,7 +514,7 @@ plot_changes <- function(current, future, scenario, species, panel_n) {
       label = paste0(panel_n, scenario),
       hjust = 0, # align left
       vjust = 1, # align top
-      size = 5
+      size = 7
     ) +
     
     scale_fill_manual(

@@ -7,9 +7,9 @@ set.seed(54367) # Setting seed for random calculations
 read_file_fun("graph_df/", read.csv)
 read_file_fun("graph_files/", readRDS)
 
-graph_plot_fun(gnap_pres_net$graph, 50, "Present")
-graph_plot_fun(gnap_ssp245_net$graph, 50, "Future spp2-4.5")
-graph_plot_fun(gnap_ssp585_net$graph, 50, "Future ssp5-8.5")
+graph_plot_fun(gnap_pres_net$graph, 50, "Present", gnap_pres_net$components$membership)
+graph_plot_fun(gnap_ssp245_net$graph, 50, "SSP2-4.5", gnap_ssp245_net$components$membership)
+graph_plot_fun(gnap_ssp585_net$graph, 50, "SSP5-8.5", gnap_ssp585_net$components$membership)
 
 # 1.Area vs node degree -----------------------------------------------------
 ggplot(gnap_pres_node_metrics, aes(y = log10(degree + 1), x = log10(area_m2))) +
